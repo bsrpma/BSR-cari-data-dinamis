@@ -121,8 +121,8 @@ def cari_data(filter_dict, kolom_group, kolom_tampil):
 
     df = pd.read_parquet(loc_dbs_juni)
 
-    print("\n===== Cek tipe data kolom sebelum filter =====")
-    print(df.dtypes)
+    # print("\n===== Cek tipe data kolom sebelum filter =====")
+    # print(df.dtypes)
 
     # --- Filter QTY per KODE OUTLET ---
     if "QTY" in filter_dict and filter_dict["QTY"]:
