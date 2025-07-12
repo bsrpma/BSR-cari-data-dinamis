@@ -1,6 +1,44 @@
 import os
 import pandas as pd
 
+versi_lokal = "1.0.0"
+gh = GitHelper(versi_lokal=versi_lokal)
+gh.cek_versi()
+
+import requests
+import sys
+
+class GitHelper:
+    url_version = "https://raw.githubusercontent.com/bsrpma/BSR-cari-data-dinamis/main/version.txt"
+
+    def __init__(self, versi_lokal="1.0.0"):
+        self.versi_lokal = versi_lokal
+
+    def cek_versi(self):
+        try:
+            r = requests.get(self.url_version, timeout=5)
+            r.raise_for_status()
+            versi_online = r.text.strip()
+
+            if versi_online != self.versi_lokal:
+                print(f"⚠️ Versi baru tersedia: {versi_online} (lokal: {self.versi_lokal})")
+                print("  [1] Lanjut pakai versi lokal")
+                print("  [2] Keluar")
+                pilihan = input("Masukkan pilihan (1/2): ").strip()
+
+                if pilihan == "1":
+                    print("Lanjut dengan versi lokal...\n")
+                else:
+                    sys.exit("Keluar dari program.")
+            else:
+                print("✅ Sudah versi terbaru.\n")
+
+        except requests.exceptions.ConnectionError:
+            print("⚠️ Tidak ada koneksi internet. Lanjut dengan versi lokal...\n")
+        except Exception as e:
+            print(f"❌ Gagal cek versi: {e}\nLanjut dengan versi lokal...\n")
+
+
 # Atur tampilan terminal
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
@@ -160,8 +198,13 @@ kolom_tampil_pilihan = ["PMA", "NAMA SLS2"]
 
 # ==========================
 if __name__ == "__main__":
+    versi_lokal = "1.0.0"
+    gh = GitHelper(versi_lokal=versi_lokal)
+    gh.cek_versi()
+
     df_hasil, total_qty, total_value = cari_data(filter_dict, kolom_group_pilihan, kolom_tampil_pilihan)
     if df_hasil is not None and not df_hasil.empty:
         simpan_ke_excel(df_hasil)
     else:
         print("❌ Tidak ada data terfilter, tidak disimpan.")
+
