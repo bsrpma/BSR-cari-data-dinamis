@@ -20,14 +20,16 @@ class GitHelper:
 
             if versi_online != self.versi_lokal:
                 print(f"⚠️ Versi baru tersedia: {versi_online} (lokal: {self.versi_lokal})")
-                print("  [1] Lanjut pakai versi lokal")
-                print("  [2] Keluar")
+                print("  [1] Download versi baru")
+                print("  [2] Lanjut pakai versi sekarang")
                 pilihan = input("Masukkan pilihan (1/2): ").strip()
 
                 if pilihan == "1":
-                    print("Lanjut dengan versi lokal...\n")
+                    print("▶️ Silakan download manual dari repo Github:")
+                    print("   https://github.com/bsrpma/BSR-cari-data-dinamis")
+                    print("✅ Setelah download, jalankan ulang script.")
                 else:
-                    sys.exit("Keluar dari program.")
+                    print("Lanjut dengan versi lokal...\n")
             else:
                 print("✅ Sudah versi terbaru.\n")
 
