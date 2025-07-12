@@ -1,0 +1,31 @@
+# Contoh penjelasan kolom (tidak untuk filter.txt)
+
+KODE OUTLET = C123456 (object) - kode outlet kombinasi huruf & angka
+NAMA OUTLET = ALFAMART (object) - nama toko/outlet
+CHANNEL = GT, MT (object) - jalur distribusi
+FC = FC1 (object)
+RUTE = R1 (object)
+PMA = PMA BANJAR (object)
+KODE SALESMAN = 12345 (object)
+TGL = 2024-12-31 (datetime)
+KD_BRG = 303174 (int64) - kode barang
+NM_BRG = AHH GGM 4g GT (object) - nama barang
+BU = BU A (object)
+MARK = M1 (object)
+KODE BARANG = 123456 (int64)
+DESCRIPTION = deskripsi barang (object)
+QTY = 100.0 (float64)
+VALUE = 1_000_000 (int64)
+KET = 1 (int64)
+BLN = Jan (object)
+CUST-OUTLET = C001 (object)
+REGION = Jawa Barat (object)
+DIV = Div A (object)
+Kd_Cust. = 5000 (int64)
+KD SLS2 = 100 (int64)
+NIK SLS2 = 1234567890 (object)
+NAMA SLS2 = AE SALES (object)
+VALUE NETT = 950000 (int64)
+NO FAKTUR = 1234567 (int64)
+VER ITEM = V1 (object)
+BP = BP1 (object)
