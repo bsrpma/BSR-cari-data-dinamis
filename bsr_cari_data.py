@@ -1,13 +1,11 @@
 import os
+import sys
+import requests
 import pandas as pd
 
-versi_lokal = "1.0.0"
-gh = GitHelper(versi_lokal=versi_lokal)
-gh.cek_versi()
-
-import requests
-import sys
-
+# ==========================
+# --- CEK VERSI GITHUB ---
+# ==========================
 class GitHelper:
     url_version = "https://raw.githubusercontent.com/bsrpma/BSR-cari-data-dinamis/main/version.txt"
 
@@ -38,8 +36,9 @@ class GitHelper:
         except Exception as e:
             print(f"❌ Gagal cek versi: {e}\nLanjut dengan versi lokal...\n")
 
-
-# Atur tampilan terminal
+# ==========================
+# --- SETTING PANDAS ---
+# ==========================
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", None)
@@ -50,6 +49,9 @@ dir_now = os.getcwd()
 parent = os.path.dirname(dir_now)
 gparent = os.path.dirname(parent)
 
+# ==========================
+# --- FUNGSI CARI DATA ---
+# ==========================
 def cari_data(filter_dict, kolom_group, kolom_tampil):
     dbase_juni = "R09 DBASE GT PRIANGAN TIMUR.parquet"
     loc_dbs_juni = os.path.join(gparent, "PMA_2", "dbase_gab", "_hasil", "25.07.R09", dbase_juni)
@@ -64,7 +66,7 @@ def cari_data(filter_dict, kolom_group, kolom_tampil):
     # --- FILTER DINAMIS ---
     for kolom, nilai in filter_dict.items():
         if kolom == "NAMA_SLS2_AWAL":
-            continue  # Diproses di bawah
+            continue
 
         if kolom in df.columns and nilai:
             if kolom == "QTY" and isinstance(nilai, list) and len(nilai) > 0:
@@ -122,7 +124,10 @@ def cari_data(filter_dict, kolom_group, kolom_tampil):
 
     return df_display, total_qty, total_value
 
-def simpan_ke_excel(df):
+# ==========================
+# --- SIMPAN KE EXCEL ---
+# ==========================
+def simpan_ke_excel(df, total_qty, total_value):
     jawab = input("\nSimpan ke Excel? (ketik 'y' untuk Ya, selain itu untuk Tidak): ")
     if jawab.strip().lower() == "y":
         nama_file = input("Masukkan nama file Excel (tanpa .xlsx): ")
@@ -140,12 +145,8 @@ def simpan_ke_excel(df):
             format_value = workbook.add_format({"num_format": "#,##0"})
 
             for idx, col in enumerate(df.columns):
-                # Hitung panjang maksimum string pada kolom, +5
-                max_length = max(
-                    [len(str(s)) for s in df[col].astype(str).values] + [len(col)]
-                ) + 5
+                max_length = max([len(str(s)) for s in df[col].astype(str).values] + [len(col)]) + 5
 
-                # Terapkan format jika kolom numeric yang sudah diformat
                 if col == "QTY_fmt":
                     worksheet.set_column(idx, idx, max_length, format_qty)
                 elif col == "VALUE_fmt":
@@ -153,12 +154,17 @@ def simpan_ke_excel(df):
                 else:
                     worksheet.set_column(idx, idx, max_length)
 
+            # Tambahkan total di bawah
+            last_row = len(df) + 1  # +1 karena header
+            worksheet.write(last_row, df.columns.get_loc("QTY_fmt"), f"Total QTY: {total_qty:,.1f}")
+            worksheet.write(last_row + 1, df.columns.get_loc("VALUE_fmt"), f"Total VALUE: {total_value:,.0f}")
+
         print(f"✅ Data berhasil disimpan ke: {full_path}")
     else:
         print("❌ Tidak disimpan ke Excel.")
 
 # ==========================
-# --- SETTING DINAMIS DI SINI ---
+# --- SETTING FILTER ---
 # ==========================
 filter_dict = {
     "KODE OUTLET": [],
@@ -197,6 +203,8 @@ kolom_group_pilihan = ["PMA", "NAMA SLS2", "KD_BRG", "NM_BRG"]
 kolom_tampil_pilihan = ["PMA", "NAMA SLS2"]
 
 # ==========================
+# --- MAIN ---
+# ==========================
 if __name__ == "__main__":
     versi_lokal = "1.0.0"
     gh = GitHelper(versi_lokal=versi_lokal)
@@ -204,7 +212,6 @@ if __name__ == "__main__":
 
     df_hasil, total_qty, total_value = cari_data(filter_dict, kolom_group_pilihan, kolom_tampil_pilihan)
     if df_hasil is not None and not df_hasil.empty:
-        simpan_ke_excel(df_hasil)
+        simpan_ke_excel(df_hasil, total_qty, total_value)
     else:
         print("❌ Tidak ada data terfilter, tidak disimpan.")
-
