@@ -16,10 +16,9 @@ def cari_data(filter_dict, kolom_group, kolom_tampil):
     dbase_juni = "R09 DBASE GT PRIANGAN TIMUR.parquet"
     loc_dbs_juni = os.path.join(gparent, "PMA_2", "dbase_gab", "_hasil", "25.07.R09", dbase_juni)
 
-    # Cek file
     if not os.path.isfile(loc_dbs_juni):
-        print(f'dbase {dbase_juni} tidak ditemukan')
-        return None
+        print(f"❌ dbase {dbase_juni} tidak ditemukan di {loc_dbs_juni}")
+        return None, 0, 0
 
     df = pd.read_parquet(loc_dbs_juni)
     print("Kolom tersedia:", df.columns.tolist())
@@ -27,12 +26,12 @@ def cari_data(filter_dict, kolom_group, kolom_tampil):
     # --- FILTER DINAMIS ---
     for kolom, nilai in filter_dict.items():
         if kolom == "NAMA_SLS2_AWAL":
-            continue  # akan diproses di bawah
+            continue  # Diproses di bawah
 
         if kolom in df.columns and nilai:
             if kolom == "QTY" and isinstance(nilai, list) and len(nilai) > 0:
                 if "KODE OUTLET" not in df.columns:
-                    print("Kolom KODE OUTLET tidak tersedia untuk filter QTY")
+                    print("⚠️  Kolom KODE OUTLET tidak tersedia untuk filter QTY")
                     continue
                 group_qty = df.groupby("KODE OUTLET", as_index=False)["QTY"].sum()
                 filter_exp = nilai[0]
@@ -47,23 +46,26 @@ def cari_data(filter_dict, kolom_group, kolom_tampil):
                 df = df[df["KODE OUTLET"].isin(valid_outlet)]
             else:
                 df = df[df[kolom].isin(nilai)]
+        elif kolom not in df.columns and nilai:
+            print(f"⚠️  Kolom {kolom} tidak ditemukan, dilewati.")
 
-    # --- Filter khusus NAMA_SLS2_AWAL (di luar loop) ---
+    # --- Filter khusus NAMA_SLS2_AWAL ---
     prefix = filter_dict.get("NAMA_SLS2_AWAL", "")
     if prefix and "NAMA SLS2" in df.columns:
         df = df[df["NAMA SLS2"].str.startswith(prefix, na=False)]
 
-    # --- Pastikan kolom grouping valid ---
-    kolom_group_valid = [k for k in kolom_group if k in df.columns]
-
     # --- Group by ---
+    kolom_group_valid = [k for k in kolom_group if k in df.columns]
+    if not kolom_group_valid:
+        print("❌ Tidak ada kolom grouping yang valid.")
+        return None, 0, 0
+
     df_grouped = df.groupby(kolom_group_valid, as_index=False)[["QTY", "VALUE"]].sum()
 
-    # Format
+    # Tambah kolom formatted
     df_grouped["QTY_fmt"] = df_grouped["QTY"].apply(lambda x: f"{x:,.1f}")
     df_grouped["VALUE_fmt"] = df_grouped["VALUE"].apply(lambda x: f"{x:,.0f}")
 
-    # Kolom display
     kolom_tampil_valid = [k for k in kolom_tampil if k in df_grouped.columns]
     kolom_final = kolom_tampil_valid + ["QTY_fmt", "VALUE_fmt"]
     df_display = df_grouped[kolom_final]
@@ -80,16 +82,39 @@ def cari_data(filter_dict, kolom_group, kolom_tampil):
     print(f"Total QTY   : {total_qty:,.1f}")
     print(f"Total VALUE : {total_value:,.0f}")
 
-    return df_display
+    return df_display, total_qty, total_value
 
 def simpan_ke_excel(df):
-    jawab = input("\nSimpan ke Excel? (ketik '1' untuk Ya, selain itu untuk Tidak): ")
-    if jawab.strip() == "1":
+    jawab = input("\nSimpan ke Excel? (ketik 'y' untuk Ya, selain itu untuk Tidak): ")
+    if jawab.strip().lower() == "y":
         nama_file = input("Masukkan nama file Excel (tanpa .xlsx): ")
         if not nama_file:
             nama_file = "hasil_export"
         full_path = f"{nama_file}.xlsx"
-        df.to_excel(full_path, index=False)
+
+        with pd.ExcelWriter(full_path, engine="xlsxwriter") as writer:
+            df.to_excel(writer, index=False, sheet_name="Data")
+            workbook  = writer.book
+            worksheet = writer.sheets["Data"]
+
+            # Format kolom QTY dan VALUE jika ada
+            format_qty = workbook.add_format({"num_format": "#,##0.0"})
+            format_value = workbook.add_format({"num_format": "#,##0"})
+
+            for idx, col in enumerate(df.columns):
+                # Hitung panjang maksimum string pada kolom, +5
+                max_length = max(
+                    [len(str(s)) for s in df[col].astype(str).values] + [len(col)]
+                ) + 5
+
+                # Terapkan format jika kolom numeric yang sudah diformat
+                if col == "QTY_fmt":
+                    worksheet.set_column(idx, idx, max_length, format_qty)
+                elif col == "VALUE_fmt":
+                    worksheet.set_column(idx, idx, max_length, format_value)
+                else:
+                    worksheet.set_column(idx, idx, max_length)
+
         print(f"✅ Data berhasil disimpan ke: {full_path}")
     else:
         print("❌ Tidak disimpan ke Excel.")
@@ -135,6 +160,8 @@ kolom_tampil_pilihan = ["PMA", "NAMA SLS2"]
 
 # ==========================
 if __name__ == "__main__":
-    df_hasil = cari_data(filter_dict, kolom_group_pilihan, kolom_tampil_pilihan)
+    df_hasil, total_qty, total_value = cari_data(filter_dict, kolom_group_pilihan, kolom_tampil_pilihan)
     if df_hasil is not None and not df_hasil.empty:
         simpan_ke_excel(df_hasil)
+    else:
+        print("❌ Tidak ada data terfilter, tidak disimpan.")
