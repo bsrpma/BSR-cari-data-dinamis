@@ -10,9 +10,9 @@ from packaging import version
 # ======================
 class GitHelper:
     url_version = "https://raw.githubusercontent.com/bsrpma/BSR-cari-data-dinamis/main/version.txt"
-    url_script = "https://raw.githubusercontent.com/bsrpma/BSR-cari-data-dinamis/main/dist/main.exe"
-    nama_file_lokal = "main.py"
-    nama_file_download = "main_download.py"
+    url_script = "https://github.com/bsrpma/BSR-cari-data-dinamis/tree/313149ed5b22a29387b5fc0f9acf11efc7e796dd/dist/main.exe"
+    nama_file_lokal = "main.exe"
+    nama_file_download = "main_download.exe"
     nama_bat = "replace_script.bat"
 
     def __init__(self, versi_lokal="1.0.0"):
