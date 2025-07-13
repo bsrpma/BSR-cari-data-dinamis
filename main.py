@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import pandas as pd
 import requests
@@ -38,7 +39,7 @@ class GitHelper:
                     print("💡 Akan update otomatis, script akan restart...")
 
                     # Langsung exit supaya .bat bisa berjalan
-                    exit()
+                    sys.exit()
                 else:
                     print("Lanjut dengan versi lokal...\n")
             else:
@@ -56,16 +57,18 @@ class GitHelper:
                 f.write(r.content)
         except Exception as e:
             print(f"❌ Gagal download script: {e}")
-            exit()
+            sys.exit()
 
     def buat_bat(self):
-        isi_bat = f"""
+        isi_bat = f
+        """
 @echo off
-timeout /t 2 >nul
-del "{self.nama_file_lokal}"
-rename "{self.nama_file_download}" "{self.nama_file_lokal}"
-del "{self.nama_bat}"
-start "" "{self.nama_file_lokal}"
+timeout /t 3 >nul
+del "main.py"
+rename "main_download.py" "main.py"
+start "" "main.py"
+del "%~f0"
+
         """
         with open(self.nama_bat, "w") as f:
             f.write(isi_bat.strip()) 
@@ -81,7 +84,7 @@ class DataModel:
     def load_data(self):
         if not os.path.isfile(self.lokasi_db):
             print(f"❌ Database tidak ditemukan: {self.lokasi_db}")
-            exit()
+            sys.exit()
         self.df = pd.read_parquet(self.lokasi_db)
 
     def apply_filter(self, filter_dict):
@@ -215,7 +218,7 @@ def baca_filter(file_filter):
     filter_dict = {}
     if not os.path.isfile(file_filter):
         print(f"❌ File {file_filter} tidak ditemukan.")
-        exit()
+        sys.exit()
     with open(file_filter, "r", encoding="utf-8") as f:
         for line in f:
             if "=" in line:
@@ -231,7 +234,7 @@ def baca_kolom(file_kolom):
     kolom_list = []
     if not os.path.isfile(file_kolom):
         print(f"❌ File {file_kolom} tidak ditemukan.")
-        exit()
+        sys.exit()
     with open(file_kolom, "r", encoding="utf-8") as f:
         for line in f:
             if "=" in line:
@@ -251,7 +254,7 @@ if __name__ == "__main__":
     lokasi_file_txt = "lokasi_dbase.txt"
     if not os.path.isfile(lokasi_file_txt):
         print(f"❌ File {lokasi_file_txt} tidak ditemukan.")
-        exit()
+        sys.exit()
 
     with open(lokasi_file_txt, "r", encoding="utf-8") as f:
         dbase_path = f.read().strip()
