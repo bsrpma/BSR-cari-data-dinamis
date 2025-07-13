@@ -1,4 +1,5 @@
 import os
+import time
 import pandas as pd
 import requests
 import subprocess
@@ -22,9 +23,9 @@ class GitHelper:
             r = requests.get(self.url_version, timeout=5)
             r.raise_for_status()
             versi_online = r.text.strip()
-            print(f"Versi online (dari file): '{versi_online}'")  # Debug
+            print(f"Versi online (dari file): '{versi_online}'")
 
-            if version.parse(versi_online) > version.parse(self.versi_lokal):
+            if versi_online != self.versi_lokal:
                 print(f"⚠️ Versi baru tersedia: {versi_online} (lokal: {self.versi_lokal})")
                 print("  [1] Download versi baru otomatis")
                 print("  [2] Lanjut pakai versi sekarang")
@@ -35,7 +36,12 @@ class GitHelper:
                     self.buat_bat()
                     print("✅ Script baru sudah di-download.")
                     print("💡 Akan update otomatis, script akan restart...")
-                    subprocess.Popen([self.nama_bat], shell=True)
+
+                    # Delay agar file .bat benar-benar selesai ditulis
+                    time.sleep(1)
+
+                    # Jalankan file .bat
+                    subprocess.Popen(self.nama_bat, shell=True)
                     exit()
                 else:
                     print("Lanjut dengan versi lokal...\n")
@@ -67,6 +73,8 @@ start "" "{self.nama_file_lokal}"
         """
         with open(self.nama_bat, "w") as f:
             f.write(isi_bat.strip())
+            f.flush()
+            os.fsync(f.fileno())  # Pastikan file benar-benar selesai ditulis ke disk
 
 # ======================
 # --- Model ---
