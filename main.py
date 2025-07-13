@@ -10,7 +10,7 @@ from packaging import version
 # ======================
 class GitHelper:
     url_version = "https://raw.githubusercontent.com/bsrpma/BSR-cari-data-dinamis/main/version.txt"
-    url_script = "https://raw.githubusercontent.com/bsrpma/BSR-cari-data-dinamis/main/main.py"
+    url_script = "https://raw.githubusercontent.com/bsrpma/BSR-cari-data-dinamis/main/dist/main.exe"
     nama_file_lokal = "main.py"
     nama_file_download = "main_download.py"
     nama_bat = "replace_script.bat"
