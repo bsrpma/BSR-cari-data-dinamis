@@ -37,11 +37,7 @@ class GitHelper:
                     print("✅ Script baru sudah di-download.")
                     print("💡 Akan update otomatis, script akan restart...")
 
-                    # Delay agar file .bat benar-benar selesai ditulis
-                    time.sleep(1)
-
-                    # Jalankan file .bat
-                    subprocess.Popen(self.nama_bat, shell=True)
+                    # Langsung exit supaya .bat bisa berjalan
                     exit()
                 else:
                     print("Lanjut dengan versi lokal...\n")
@@ -65,16 +61,14 @@ class GitHelper:
     def buat_bat(self):
         isi_bat = f"""
 @echo off
-timeout /t 1 >nul
+timeout /t 2 >nul
 del "{self.nama_file_lokal}"
 rename "{self.nama_file_download}" "{self.nama_file_lokal}"
 del "{self.nama_bat}"
 start "" "{self.nama_file_lokal}"
         """
         with open(self.nama_bat, "w") as f:
-            f.write(isi_bat.strip())
-            f.flush()
-            os.fsync(f.fileno())  # Pastikan file benar-benar selesai ditulis ke disk
+            f.write(isi_bat.strip()) 
 
 # ======================
 # --- Model ---
