@@ -11,7 +11,7 @@ from packaging import version
 # ======================
 class GitHelper:
     url_version = "https://raw.githubusercontent.com/bsrpma/BSR-cari-data-dinamis/main/version.txt"
-    url_script = "https://github.com/bsrpma/BSR-cari-data-dinamis/tree/313149ed5b22a29387b5fc0f9acf11efc7e796dd/dist/main.exe"
+    url_script = "https://raw.githubusercontent.com/bsrpma/BSR-cari-data-dinamis/main/dist/main.exe"
     nama_file_lokal = "main.exe"
     nama_file_download = "main_download.exe"
     nama_bat = "replace_script.bat"
@@ -37,8 +37,6 @@ class GitHelper:
                     self.buat_bat()
                     print("✅ Script baru sudah di-download.")
                     print("💡 Akan update otomatis, script akan restart...")
-
-                    # Langsung exit supaya .bat bisa berjalan
                     sys.exit()
                 else:
                     print("Lanjut dengan versi lokal...\n")
@@ -60,18 +58,16 @@ class GitHelper:
             sys.exit()
 
     def buat_bat(self):
-        isi_bat = f
-        """
+        isi_bat = f"""
 @echo off
 timeout /t 3 >nul
-del "main.py"
-rename "main_download.py" "main.py"
-start "" "main.py"
+del "{self.nama_file_lokal}"
+rename "{self.nama_file_download}" "{self.nama_file_lokal}"
+start "" "{self.nama_file_lokal}"
 del "%~f0"
-
         """
         with open(self.nama_bat, "w") as f:
-            f.write(isi_bat.strip()) 
+            f.write(isi_bat.strip())
 
 # ======================
 # --- Model ---
