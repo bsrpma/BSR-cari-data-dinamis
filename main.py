@@ -1,10 +1,8 @@
 import os
 import sys
-import time
 import pandas as pd
 import requests
 import subprocess
-from packaging import version
 
 # ======================
 # --- Git Helper ---
@@ -18,6 +16,7 @@ class GitHelper:
 
     def __init__(self, versi_lokal="1.0.0"):
         self.versi_lokal = versi_lokal
+        self.is_exe = getattr(sys, 'frozen', False)
 
     def cek_versi(self):
         try:
@@ -37,7 +36,14 @@ class GitHelper:
                     self.buat_bat()
                     print("✅ Script baru sudah di-download.")
                     print("💡 Akan update otomatis, script akan restart...")
-                    sys.exit()
+
+                    if self.is_exe:
+                        os.startfile(self.nama_bat)
+                        sys.exit()
+                    else:
+                        print("🚨 Mode simulasi (.py): Batch tidak dijalankan otomatis.")
+                        print(f"➡ Silakan cek file '{self.nama_bat}' secara manual jika mau lihat simulasi.")
+                        return
                 else:
                     print("Lanjut dengan versi lokal...\n")
             else:
@@ -58,14 +64,33 @@ class GitHelper:
             sys.exit()
 
     def buat_bat(self):
-        isi_bat = f"""
+        if self.is_exe:
+            isi_bat = f"""
 @echo off
+echo ======================
+echo 🔁 Proses update mulai...
+echo ======================
 timeout /t 3 >nul
+echo Hapus file lama...
 del "{self.nama_file_lokal}"
+echo Rename file baru...
 rename "{self.nama_file_download}" "{self.nama_file_lokal}"
+echo Jalankan ulang...
 start "" "{self.nama_file_lokal}"
+echo Hapus file batch...
 del "%~f0"
-        """
+            """
+        else:
+            # Simulasi mode .py
+            isi_bat = f"""
+@echo off
+echo =========================
+echo 🚨 Simulasi update (mode .py)
+echo Seharusnya di sini ganti file EXE
+echo File yang di-download: "{self.nama_file_download}"
+echo =========================
+pause
+            """
         with open(self.nama_bat, "w") as f:
             f.write(isi_bat.strip())
 
@@ -94,7 +119,16 @@ class DataModel:
         if "QTY" in filter_dict and filter_dict["QTY"]:
             filter_exp = filter_dict["QTY"][0]
             operator = filter_exp[:1]
-            angka = float(filter_exp[1:])
+            try:
+                angka = float(filter_exp[1:])
+            except ValueError:
+                print(f"❌ Format QTY salah: {filter_exp}")
+                sys.exit()
+
+            if "KODE OUTLET" not in df.columns or "QTY" not in df.columns:
+                print("❌ Kolom QTY atau KODE OUTLET tidak ditemukan.")
+                sys.exit()
+
             group_qty = df.groupby("KODE OUTLET", as_index=False)["QTY"].sum()
             if operator == ">":
                 valid_outlet = group_qty[group_qty["QTY"] > angka]["KODE OUTLET"].tolist()
@@ -182,10 +216,7 @@ class Controller:
             print("❌ Tidak ada data terfilter.")
             return
 
-        # Kolom numerik yang tidak boleh ikut group
         numeric_cols = ["QTY", "VALUE", "VALUE NETT"]
-
-        # Kolom group valid = kolom tampil yang ada di dataframe, dan bukan kolom numerik
         kolom_group_valid = [k for k in self.kolom_tampil if k in df_filtered.columns and k not in numeric_cols]
         print("\n✅ Kolom group valid (tanpa kolom numerik):", kolom_group_valid)
 
@@ -193,16 +224,20 @@ class Controller:
             print("❌ Tidak ada kolom grouping yang valid.")
             return
 
-        df_grouped = df_filtered.groupby(kolom_group_valid, as_index=False)[["QTY", "VALUE"]].sum()
+        numeric_cols_group = [col for col in ["QTY", "VALUE"] if col in df_filtered.columns]
+        if not numeric_cols_group:
+            print("❌ Kolom numerik QTY atau VALUE tidak ditemukan.")
+            return
 
-        df_grouped["QTY_fmt"] = df_grouped["QTY"].apply(lambda x: f"{x:,.1f}")
-        df_grouped["VALUE_fmt"] = df_grouped["VALUE"].apply(lambda x: f"{x:,.0f}")
+        df_grouped = df_filtered.groupby(kolom_group_valid, as_index=False)[numeric_cols_group].sum()
+        df_grouped["QTY_fmt"] = df_grouped["QTY"].apply(lambda x: f"{x:,.1f}") if "QTY" in df_grouped else ""
+        df_grouped["VALUE_fmt"] = df_grouped["VALUE"].apply(lambda x: f"{x:,.0f}") if "VALUE" in df_grouped else ""
 
         kolom_final = kolom_group_valid + ["QTY_fmt", "VALUE_fmt"]
         df_display = df_grouped[kolom_final]
 
-        total_qty = df_grouped["QTY"].sum()
-        total_value = df_grouped["VALUE"].sum()
+        total_qty = df_grouped["QTY"].sum() if "QTY" in df_grouped else 0
+        total_value = df_grouped["VALUE"].sum() if "VALUE" in df_grouped else 0
 
         self.view.view_terminal(df_display, total_qty, total_value)
         self.view.save_to_excel(df_display, total_qty, total_value)
@@ -257,9 +292,9 @@ if __name__ == "__main__":
 
     filter_dict = baca_filter("filter.txt")
     kolom_tampil = baca_kolom("kolom.txt")
+    print("✅ Kolom tampil yang dipilih:", kolom_tampil)
 
     model = DataModel(dbase_path)
     view = DataView()
     controller = Controller(model, view, filter_dict, kolom_tampil)
-
     controller.run()
