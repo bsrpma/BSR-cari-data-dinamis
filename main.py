@@ -17,6 +17,7 @@ class GitHelper:
     def __init__(self, versi_lokal="1.0.0"):
         self.versi_lokal = versi_lokal
         self.is_exe = getattr(sys, 'frozen', False)
+        self.perlu_exit = False  # ✅ DITAMBAHKAN
 
     def versi_ke_tuple(self, versi_str):
         return tuple(map(int, versi_str.strip().split(".")))
@@ -33,6 +34,9 @@ class GitHelper:
                 print("Mulai proses update otomatis...")
 
                 self.download_script()
+                if self.perlu_exit:  # ✅ Tambahan: Jika download gagal, jangan lanjut
+                    return
+
                 self.buat_bat()
 
                 print("Script baru sudah di-download.")
@@ -60,7 +64,8 @@ class GitHelper:
                 f.write(r.content)
         except Exception as e:
             print(f"Gagal download script: {e}")
-            sys.exit()
+            self.perlu_exit = True  # ✅ DITAMBAHKAN
+            return
 
     def buat_bat(self):
         if self.is_exe:
@@ -94,8 +99,6 @@ del "%~f0"
 
         with open(self.nama_bat, "w", encoding="utf-8") as f:
             f.write(isi_bat.strip())
-
-
 
 # ======================
 # --- Fungsi Util ---
@@ -280,16 +283,15 @@ class Controller:
         self.view.view_terminal(df_display, total_qty, total_value)
         self.view.save_to_excel(df_display, total_qty, total_value)
 
-
 # ======================
 # --- Main Program ---
 # ======================
 if __name__ == "__main__":
-    versi_lokal = "1.0.0"
+    versi_lokal = "1.0.1"
     gh = GitHelper(versi_lokal=versi_lokal)
     gh.cek_versi()
 
-    if gh.perlu_exit:
+    if gh.perlu_exit:  # ✅ AMAN SEKARANG
         sys.exit()
 
     lokasi_file_txt = "lokasi_dbase.txt"
@@ -308,3 +310,6 @@ if __name__ == "__main__":
     view = DataView()
     controller = Controller(model, view, filter_dict, kolom_tampil)
     controller.run()
+    print("\nProgram selesai. Terima kasih telah menggunakan aplikasi ini!")
+
+
