@@ -2,7 +2,6 @@ import os
 import sys
 import pandas as pd
 import requests
-import subprocess
 
 # ======================
 # --- Git Helper ---
@@ -99,7 +98,8 @@ class GitHelper:
             """
         with open(self.nama_bat, "w") as f:
             f.write(isi_bat.strip())
-        sys.exit()
+        if self.is_exe:
+            sys.exit()
 
 
 # ======================
