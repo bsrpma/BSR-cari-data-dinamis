@@ -40,7 +40,7 @@ class GitHelper:
 
                 if self.is_exe:
                     os.startfile(self.nama_bat)
-                    sys.exit()
+                    os._exit(0)  # ⛔ Force exit to avoid continuing execution
                 else:
                     print("🚨 Mode simulasi (.py): Batch tidak dijalankan otomatis.")
                     print(f"➡ Silakan jalankan file '{self.nama_bat}' secara manual.")
@@ -51,6 +51,7 @@ class GitHelper:
             print("⚠️ Tidak ada koneksi internet. Lanjut dengan versi lokal...\n")
         except Exception as e:
             print(f"❌ Gagal cek versi: {e}\nLanjut dengan versi lokal...\n")
+
 
     def download_script(self):
         try:
