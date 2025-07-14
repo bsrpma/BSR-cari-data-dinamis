@@ -2,6 +2,7 @@ import os
 import sys
 import pandas as pd
 import requests
+import subprocess
 
 # ======================
 # --- Git Helper ---
@@ -17,6 +18,9 @@ class GitHelper:
         self.versi_lokal = versi_lokal
         self.is_exe = getattr(sys, 'frozen', False)
 
+    def versi_ke_tuple(self, versi):
+        return tuple(map(int, versi.strip().split(".")))
+
     def cek_versi(self):
         try:
             r = requests.get(self.url_version, timeout=5)
@@ -24,29 +28,25 @@ class GitHelper:
             versi_online = r.text.strip()
             print(f"Versi online (dari file): '{versi_online}'")
 
-            if versi_online != self.versi_lokal:
+            if self.versi_ke_tuple(versi_online) > self.versi_ke_tuple(self.versi_lokal):
                 print(f"⚠️ Versi baru tersedia: {versi_online} (lokal: {self.versi_lokal})")
-                print("  [1] Download versi baru otomatis")
-                print("  [2] Lanjut pakai versi sekarang")
-                pilihan = input("Masukkan pilihan (1/2): ").strip()
+                print("🔄 Mulai proses update otomatis...")
 
-                if pilihan == "1":
-                    self.download_script()
-                    self.buat_bat()
-                    print("✅ Script baru sudah di-download.")
-                    print("💡 Akan update otomatis, script akan restart...")
+                self.download_script()
+                self.buat_bat()
 
-                    if self.is_exe:
-                        os.startfile(self.nama_bat)
-                        sys.exit()
-                    else:
-                        print("🚨 Mode simulasi (.py): Batch tidak dijalankan otomatis.")
-                        print(f"➡ Silakan cek file '{self.nama_bat}' secara manual jika mau lihat simulasi.")
-                        return
+                print("✅ Script baru sudah di-download.")
+                print("💡 Akan update otomatis, script akan restart...")
+
+                if self.is_exe:
+                    os.startfile(self.nama_bat)
+                    sys.exit()
                 else:
-                    print("Lanjut dengan versi lokal...\n")
+                    print("🚨 Mode simulasi (.py): Batch tidak dijalankan otomatis.")
+                    print(f"➡ Silakan jalankan file '{self.nama_bat}' secara manual.")
+                    return
             else:
-                print("✅ Sudah versi terbaru.\n")
+                print("✅ Versi lokal sudah paling baru atau lebih baru dari versi online.")
         except requests.exceptions.ConnectionError:
             print("⚠️ Tidak ada koneksi internet. Lanjut dengan versi lokal...\n")
         except Exception as e:
@@ -65,41 +65,35 @@ class GitHelper:
     def buat_bat(self):
         if self.is_exe:
             isi_bat = f"""
-    @echo off
-    echo 🔁 Memulai proses update...
+@echo off
+echo 🔁 Memulai proses update...
+timeout /t 2 >nul
+
+:waitloop
+tasklist | find /i "{self.nama_file_lokal}" >nul
+if not errorlevel 1 (
+    echo ⏳ Menunggu {self.nama_file_lokal} ditutup...
     timeout /t 2 >nul
+    goto waitloop
+)
 
-    :waitloop
-    tasklist | find /i "{self.nama_file_lokal}" >nul
-    if not errorlevel 1 (
-        echo ⏳ Menunggu {self.nama_file_lokal} ditutup...
-        timeout /t 2 >nul
-        goto waitloop
-    )
+echo 🔄 Menghapus file lama...
+del "{self.nama_file_lokal}"
 
-    echo 🔄 Menghapus file lama...
-    del "{self.nama_file_lokal}"
+echo 📦 Rename file baru...
+rename "{self.nama_file_download}" "{self.nama_file_lokal}"
 
-    echo 📦 Rename file baru...
-    rename "{self.nama_file_download}" "{self.nama_file_lokal}"
+echo ▶ Menjalankan ulang aplikasi...
+start "" "{self.nama_file_lokal}"
 
-    echo ▶ Menjalankan ulang aplikasi...
-    start "" "{self.nama_file_lokal}"
-
-    echo 🧹 Menghapus file batch...
-    del "%~f0"
-            """
+echo 🧹 Menghapus file batch...
+del "%~f0"
+"""
         else:
-            # Simulasi saat bukan .exe
-            isi_bat = f"""
-    @echo off
-    echo Simulasi update (.py)
-    pause
-            """
+            isi_bat = "@echo off\necho Simulasi update (.py)\npause"
+
         with open(self.nama_bat, "w") as f:
             f.write(isi_bat.strip())
-        if self.is_exe:
-            sys.exit()
 
 
 # ======================
