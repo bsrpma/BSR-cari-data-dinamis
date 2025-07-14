@@ -99,7 +99,7 @@ class GitHelper:
             """
         with open(self.nama_bat, "w") as f:
             f.write(isi_bat.strip())
-    sys.exit()
+        sys.exit()
 
 
 # ======================
