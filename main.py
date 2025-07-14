@@ -2,6 +2,7 @@ import os
 import sys
 import pandas as pd
 import requests
+import subprocess
 
 # ======================
 # --- Git Helper ---
@@ -16,7 +17,6 @@ class GitHelper:
     def __init__(self, versi_lokal="1.0.0"):
         self.versi_lokal = versi_lokal
         self.is_exe = getattr(sys, 'frozen', False)
-        self.perlu_exit = False  # Flag untuk hentikan eksekusi
 
     def versi_ke_tuple(self, versi_str):
         return tuple(map(int, versi_str.strip().split(".")))
@@ -29,27 +29,28 @@ class GitHelper:
             print(f"Versi online (dari file): '{versi_online}'")
 
             if self.versi_ke_tuple(versi_online) > self.versi_ke_tuple(self.versi_lokal):
-                print(f"⚠️ Versi baru tersedia: {versi_online} (lokal: {self.versi_lokal})")
-                print("🔄 Mulai proses update otomatis...")
+                print(f"Versi baru tersedia: {versi_online} (lokal: {self.versi_lokal})")
+                print("Mulai proses update otomatis...")
 
                 self.download_script()
                 self.buat_bat()
 
-                print("✅ Script baru sudah di-download.")
-                print("💡 Akan update otomatis, script akan restart...")
+                print("Script baru sudah di-download.")
+                print("Akan update otomatis, script akan restart...")
 
                 if self.is_exe:
                     os.startfile(self.nama_bat)
-                    self.perlu_exit = True
                     os._exit(0)
                 else:
-                    print("🚨 Mode simulasi (.py): Batch tidak dijalankan otomatis.")
-                    print(f"➡ Silakan jalankan file '{self.nama_bat}' secara manual.")
-                    self.perlu_exit = True
+                    print("Mode simulasi (.py): Batch tidak dijalankan otomatis.")
+                    print(f"Silakan jalankan file '{self.nama_bat}' secara manual.")
+                    return
+            else:
+                print("Versi lokal sudah paling baru atau lebih baru dari versi online.")
         except requests.exceptions.ConnectionError:
-            print("⚠️ Tidak ada koneksi internet. Lanjut dengan versi lokal...\n")
+            print("Tidak ada koneksi internet. Lanjut dengan versi lokal...\n")
         except Exception as e:
-            print(f"❌ Gagal cek versi: {e}\nLanjut dengan versi lokal...\n")
+            print(f"Gagal cek versi: {e}\nLanjut dengan versi lokal...\n")
 
     def download_script(self):
         try:
@@ -58,41 +59,42 @@ class GitHelper:
             with open(self.nama_file_download, "wb") as f:
                 f.write(r.content)
         except Exception as e:
-            print(f"❌ Gagal download script: {e}")
+            print(f"Gagal download script: {e}")
             sys.exit()
 
     def buat_bat(self):
         if self.is_exe:
             isi_bat = f"""
 @echo off
-echo 🔁 Memulai proses update...
+echo Memulai proses update...
 timeout /t 2 >nul
 
 :waitloop
 tasklist | find /i "{self.nama_file_lokal}" >nul
 if not errorlevel 1 (
-    echo ⏳ Menunggu {self.nama_file_lokal} ditutup...
+    echo Menunggu {self.nama_file_lokal} ditutup...
     timeout /t 2 >nul
     goto waitloop
 )
 
-echo 🔄 Menghapus file lama...
+echo Menghapus file lama...
 del "{self.nama_file_lokal}"
 
-echo 📦 Rename file baru...
+echo Rename file baru...
 rename "{self.nama_file_download}" "{self.nama_file_lokal}"
 
-echo ▶ Menjalankan ulang aplikasi...
+echo Menjalankan ulang aplikasi...
 start "" "{self.nama_file_lokal}"
 
-echo 🧹 Menghapus file batch...
+echo Menghapus file batch...
 del "%~f0"
 """
         else:
             isi_bat = "@echo off\necho Simulasi update (.py)\npause"
 
-        with open(self.nama_bat, "w") as f:
+        with open(self.nama_bat, "w", encoding="utf-8") as f:
             f.write(isi_bat.strip())
+
 
 
 # ======================
