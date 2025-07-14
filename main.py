@@ -7,19 +7,16 @@ import subprocess
 # ======================
 # --- Git Helper ---
 # ======================
+
+def versi_ke_tuple(self, versi_str):
+    return tuple(map(int, versi_str.strip().split(".")))
+
 class GitHelper:
     url_version = "https://raw.githubusercontent.com/bsrpma/BSR-cari-data-dinamis/main/version.txt"
     url_script = "https://raw.githubusercontent.com/bsrpma/BSR-cari-data-dinamis/main/dist/main.exe"
     nama_file_lokal = "main.exe"
     nama_file_download = "main_download.exe"
     nama_bat = "replace_script.bat"
-
-    def __init__(self, versi_lokal="1.0.0"):
-        self.versi_lokal = versi_lokal
-        self.is_exe = getattr(sys, 'frozen', False)
-
-    def versi_ke_tuple(self, versi):
-        return tuple(map(int, versi.strip().split(".")))
 
     def cek_versi(self):
         try:
