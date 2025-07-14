@@ -66,33 +66,41 @@ class GitHelper:
     def buat_bat(self):
         if self.is_exe:
             isi_bat = f"""
-@echo off
-echo ======================
-echo 🔁 Proses update mulai...
-echo ======================
-timeout /t 3 >nul
-echo Hapus file lama...
-del "{self.nama_file_lokal}"
-echo Rename file baru...
-rename "{self.nama_file_download}" "{self.nama_file_lokal}"
-echo Jalankan ulang...
-start "" "{self.nama_file_lokal}"
-echo Hapus file batch...
-del "%~f0"
+    @echo off
+    echo 🔁 Memulai proses update...
+    timeout /t 2 >nul
+
+    :waitloop
+    tasklist | find /i "{self.nama_file_lokal}" >nul
+    if not errorlevel 1 (
+        echo ⏳ Menunggu {self.nama_file_lokal} ditutup...
+        timeout /t 2 >nul
+        goto waitloop
+    )
+
+    echo 🔄 Menghapus file lama...
+    del "{self.nama_file_lokal}"
+
+    echo 📦 Rename file baru...
+    rename "{self.nama_file_download}" "{self.nama_file_lokal}"
+
+    echo ▶ Menjalankan ulang aplikasi...
+    start "" "{self.nama_file_lokal}"
+
+    echo 🧹 Menghapus file batch...
+    del "%~f0"
             """
         else:
-            # Simulasi mode .py
+            # Simulasi saat bukan .exe
             isi_bat = f"""
-@echo off
-echo =========================
-echo 🚨 Simulasi update (mode .py)
-echo Seharusnya di sini ganti file EXE
-echo File yang di-download: "{self.nama_file_download}"
-echo =========================
-pause
+    @echo off
+    echo Simulasi update (.py)
+    pause
             """
         with open(self.nama_bat, "w") as f:
             f.write(isi_bat.strip())
+    sys.exit()
+
 
 # ======================
 # --- Model ---
