@@ -2,7 +2,6 @@ import os
 import sys
 import pandas as pd
 import requests
-import subprocess
 
 # ======================
 # --- Git Helper ---
@@ -16,7 +15,8 @@ class GitHelper:
 
     def __init__(self, versi_lokal="1.0.0"):
         self.versi_lokal = versi_lokal
-        self.is_exe = getattr(sys, 'frozen', False)  # Deteksi apakah sedang dijalankan sebagai EXE
+        self.is_exe = getattr(sys, 'frozen', False)
+        self.perlu_exit = False  # Flag untuk hentikan eksekusi
 
     def versi_ke_tuple(self, versi_str):
         return tuple(map(int, versi_str.strip().split(".")))
@@ -40,18 +40,16 @@ class GitHelper:
 
                 if self.is_exe:
                     os.startfile(self.nama_bat)
-                    os._exit(0)  # ⛔ Force exit to avoid continuing execution
+                    self.perlu_exit = True
+                    os._exit(0)
                 else:
                     print("🚨 Mode simulasi (.py): Batch tidak dijalankan otomatis.")
                     print(f"➡ Silakan jalankan file '{self.nama_bat}' secara manual.")
-                    return
-            else:
-                print("✅ Versi lokal sudah paling baru atau lebih baru dari versi online.")
+                    self.perlu_exit = True
         except requests.exceptions.ConnectionError:
             print("⚠️ Tidak ada koneksi internet. Lanjut dengan versi lokal...\n")
         except Exception as e:
             print(f"❌ Gagal cek versi: {e}\nLanjut dengan versi lokal...\n")
-
 
     def download_script(self):
         try:
@@ -98,7 +96,40 @@ del "%~f0"
 
 
 # ======================
-# --- Model ---
+# --- Fungsi Util ---
+# ======================
+def baca_filter(file_filter):
+    filter_dict = {}
+    if not os.path.isfile(file_filter):
+        print(f"❌ File {file_filter} tidak ditemukan.")
+        sys.exit()
+    with open(file_filter, "r", encoding="utf-8") as f:
+        for line in f:
+            if "=" in line:
+                key, value = line.strip().split("=", 1)
+                v = value.strip()
+                if "," in v:
+                    filter_dict[key.strip()] = [i.strip() for i in v.split(",")]
+                else:
+                    filter_dict[key.strip()] = [v] if v else []
+    return filter_dict
+
+def baca_kolom(file_kolom):
+    kolom_list = []
+    if not os.path.isfile(file_kolom):
+        print(f"❌ File {file_kolom} tidak ditemukan.")
+        sys.exit()
+    with open(file_kolom, "r", encoding="utf-8") as f:
+        for line in f:
+            if "=" in line:
+                key, val = line.strip().split("=", 1)
+                if val.strip().upper() == "Y":
+                    kolom_list.append(key.strip())
+    return kolom_list
+
+
+# ======================
+# --- Data Model ---
 # ======================
 class DataModel:
     def __init__(self, lokasi_db):
@@ -217,7 +248,7 @@ class Controller:
         self.model.load_data()
         df_filtered = self.model.apply_filter(self.filter_dict)
 
-        if df_filtered is None or df_filtered.empty:
+        if df_filtered.empty:
             print("❌ Tidak ada data terfilter.")
             return
 
@@ -249,45 +280,15 @@ class Controller:
 
 
 # ======================
-# --- Util Baca Filter & Kolom ---
-# ======================
-def baca_filter(file_filter):
-    filter_dict = {}
-    if not os.path.isfile(file_filter):
-        print(f"❌ File {file_filter} tidak ditemukan.")
-        sys.exit()
-    with open(file_filter, "r", encoding="utf-8") as f:
-        for line in f:
-            if "=" in line:
-                key, value = line.strip().split("=", 1)
-                v = value.strip()
-                if "," in v:
-                    filter_dict[key.strip()] = [i.strip() for i in v.split(",")]
-                else:
-                    filter_dict[key.strip()] = [v] if v else []
-    return filter_dict
-
-def baca_kolom(file_kolom):
-    kolom_list = []
-    if not os.path.isfile(file_kolom):
-        print(f"❌ File {file_kolom} tidak ditemukan.")
-        sys.exit()
-    with open(file_kolom, "r", encoding="utf-8") as f:
-        for line in f:
-            if "=" in line:
-                key, val = line.strip().split("=", 1)
-                if val.strip().upper() == "Y":
-                    kolom_list.append(key.strip())
-    return kolom_list
-
-
-# ======================
 # --- Main Program ---
 # ======================
 if __name__ == "__main__":
     versi_lokal = "1.0.0"
     gh = GitHelper(versi_lokal=versi_lokal)
     gh.cek_versi()
+
+    if gh.perlu_exit:
+        sys.exit()
 
     lokasi_file_txt = "lokasi_dbase.txt"
     if not os.path.isfile(lokasi_file_txt):
